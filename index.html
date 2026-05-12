@@ -2,52 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mautic Manual Identity Sync</title>
+    <title>Manual CRM Sync | No Auto-Tracking</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; padding: 40px; background: #f0f4f8; }
-        .control-panel { 
-            background: white; padding: 30px; border-radius: 12px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 500px; margin: auto; 
-        }
-        h2 { color: #004a7c; margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .input-group { margin: 15px 0; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
-        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8f9fa; padding: 40px; display: flex; justify-content: center; }
+        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: #004a7c; font-size: 20px; margin-top: 0; }
+        label { display: block; font-weight: 600; font-size: 13px; margin: 15px 0 5px; color: #555; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         button { 
-            width: 100%; padding: 15px; background: #007cba; color: white; 
-            border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;
-            margin-top: 10px;
+            width: 100%; padding: 15px; background: #28a745; color: white; border: none; 
+            border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 16px;
         }
-        button:hover { background: #005a87; }
-        #terminal { 
-            margin-top: 20px; background: #1a1a1a; color: #00ff00; padding: 15px; 
-            border-radius: 6px; font-family: monospace; font-size: 12px; height: 100px; overflow-y: auto;
+        button:hover { background: #218838; }
+        #status-console { 
+            margin-top: 20px; background: #222; color: #00ff00; padding: 12px; 
+            border-radius: 6px; font-family: monospace; font-size: 12px; height: 80px; overflow-y: auto;
         }
     </style>
 </head>
 <body>
 
-<div class="control-panel">
-    <h2>Manual Contact Sync</h2>
+<div class="box">
+    <h2>Mautic Manual Sync</h2>
     
-    <div class="input-group">
-        <label>Step 1: Enter Target Email</label>
-        <input type="email" id="targetEmail" placeholder="e.g. owner@bistro.com">
-    </div>
+    <label>Contact Email (Required):</label>
+    <input type="email" id="targetEmail" placeholder="Enter user@restaurant.com">
     
-    <div class="input-group">
-        <label>Step 2: Enter Tags</label>
-        <input type="text" id="targetTags" placeholder="e.g. hot_lead, pos_sales">
-    </div>
+    <label>Tags to Apply:</label>
+    <input type="text" id="targetTags" placeholder="e.g. hot_lead, pos_demo">
     
-    <button onclick="manualSync()">Send Data to Mautic</button>
+    <button onclick="manualSync()">Push Data to Mautic</button>
     
-    <div id="terminal">System: Awaiting manual trigger...</div>
+    <div id="status-console">Awaiting user action...</div>
 </div>
 
 <script>
-    // --- 1. SILENT LOADER ---
-    // We load the script but we DO NOT call mt('send', 'pageview') here.
+    // --- 1. SILENT INITIALIZATION ---
+    // The library loads, but notice there is NO mt('send', 'pageview') here.
     (function(w,d,t,u,n,a,m){
         w['MauticTrackingObject']=n;
         w[n]=w[n]||function(){(w[n].q=w[n].q||[]).push(arguments)},
@@ -57,48 +48,45 @@
     })(window,document,'script','https://d2.restaurantassociation.com/mtc.js','mt');
 
     function log(msg) {
-        const t = document.getElementById('terminal');
-        t.innerHTML += `> ${msg}<br>`;
-        t.scrollTop = t.scrollHeight;
+        const console = document.getElementById('status-console');
+        console.innerHTML += `> ${msg}<br>`;
+        console.scrollTop = console.scrollHeight;
     }
 
-    // --- 2. THE TRIGGER-ONLY FUNCTION ---
+    // --- 2. CONTROLLED EXECUTION ---
     function manualSync() {
         const email = document.getElementById('targetEmail').value;
         const tags = document.getElementById('targetTags').value;
 
         if (!email) {
-            alert("Error: You must provide an email ID.");
+            alert("Email is required before sending data.");
             return;
         }
 
-        log(`Force Syncing: ${email}...`);
+        log(`Initiating sync for ${email}...`);
 
-        // A. Clear the existing browser ID (Prevents merging with previous test)
+        // Force reset the ID so it doesn't merge with previous browser sessions
         mt('set', 'id', null);
 
-        // B. Set the new identity parameters
-        mt('set', 'email', email);
-        mt('set', 'tags', tags);
+        // Define the specific event data
+        const articleTitle = "Labor Cost Trends 2025";
+        const forcedUrl = `${window.location.origin}${window.location.pathname}?article=${encodeURIComponent(articleTitle)}&category=Content&action=Read&t=${Date.now()}`;
 
-        // C. Build the forced URL for Timeline rows
-        const article = "Labor Cost Trends 2025";
-        const customUrl = `${window.location.origin}${window.location.pathname}?article=${encodeURIComponent(article)}&category=Content&action=Read&t=${Date.now()}`;
-
-        // D. ONLY SEND NOW
+        // NOW we send the data
         mt('send', 'pageview', {
-            'mt_event': article,
-            'page_url': customUrl,
+            'mt_event': articleTitle,
+            'page_title': articleTitle,
+            'page_url': forcedUrl,
             'email': email,
             'tags': tags
         });
 
-        log(`✅ Event and identity sent for ${email}`);
+        log(`✅ Success: Event pushed.`);
     }
 
-    // Server receipt confirmation
+    // Confirmation from server
     document.addEventListener('mauticPageEventDelivered', function() {
-        log('Mautic: Contact sync confirmed.');
+        log('Mautic: Data received.');
     });
 </script>
 
