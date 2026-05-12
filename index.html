@@ -3,71 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual CRM Control | Mautic Debugger</title>
+    <title>Mautic Contact Identity Controller</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
-        header { background: #004a7c; color: white; padding: 20px; text-align: center; border-bottom: 4px solid #007cba; }
-        .container { max-width: 600px; margin: 30px auto; padding: 20px; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: #f4f7f9; color: #333; }
+        header { background: #002b49; color: white; padding: 25px; text-align: center; border-bottom: 4px solid #007cba; }
+        .container { max-width: 600px; margin: 40px auto; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
         
         .field-group { margin-bottom: 15px; text-align: left; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; color: #444; }
         input { 
-            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; 
-            box-sizing: border-box; font-size: 14px; 
+            width: 100%; padding: 12px; border: 1px solid #ccd1d9; border-radius: 6px; 
+            box-sizing: border-box; font-size: 15px; background-color: #fff;
         }
-        input:focus { border-color: #007cba; outline: none; box-shadow: 0 0 5px rgba(0,124,186,0.2); }
+        input:focus { border-color: #007cba; outline: none; box-shadow: 0 0 0 3px rgba(0,124,186,0.1); }
 
-        .info-box { 
-            background: #e7f3ff; border: 1px solid #b2d7ff; padding: 15px; 
-            border-radius: 6px; margin: 20px 0; font-size: 14px;
+        .status-badge { 
+            background: #e1f5fe; color: #01579b; padding: 10px; 
+            border-radius: 6px; margin: 20px 0; font-size: 14px; text-align: center;
+            border: 1px solid #b3e5fc;
         }
 
         button { 
-            background-color: #28a745; color: white; border: none; padding: 15px; 
+            background-color: #007cba; color: white; border: none; padding: 16px; 
             font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
-            transition: background 0.3s;
+            transition: all 0.2s;
         }
-        button:hover { background-color: #218838; }
+        button:hover { background-color: #005a87; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
 
-        #debug-log { 
-            margin-top: 20px; background: #1e1e1e; color: #32ff32; padding: 15px; 
-            border-radius: 6px; font-family: 'Consolas', monospace; font-size: 12px; 
-            height: 120px; overflow-y: auto;
+        #console-log { 
+            margin-top: 25px; background: #1c1c1c; color: #00e676; padding: 15px; 
+            border-radius: 6px; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; 
+            height: 150px; overflow-y: auto; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Mautic Event & Identity Controller</h1>
+    <h1>Mautic Manual Lead Sync</h1>
 </header>
 
 <div class="container">
     <div class="card">
         <div class="field-group">
-            <label>Update Contact Email:</label>
-            <input type="email" id="userEmail" placeholder="Enter email (e.g. owner@restaurant.com)" value="testuser@example.com">
+            <label>Target Contact Email:</label>
+            <input type="email" id="targetEmail" placeholder="Enter owner@restaurant.com" value="test_contact_1@example.com">
         </div>
 
         <div class="field-group">
-            <label>Update Tags (separate with commas):</label>
-            <input type="text" id="userTags" placeholder="e.g. hot_lead, article_read, v2_test" value="hot_lead, restaurant_pro">
+            <label>Update Tags (comma separated):</label>
+            <input type="text" id="targetTags" placeholder="e.g. hot_lead, pos_interested" value="article_reader, labor_cost_focus">
         </div>
 
-        <div class="info-box">
-            <strong>Action:</strong> Reading Article<br>
-            <strong>Title:</strong> Labor Cost Trends 2025
+        <div class="status-badge">
+            Tracking Action: <strong>Article Read</strong><br>
+            Content: <strong>Labor Cost Trends 2025</strong>
         </div>
         
-        <button onclick="sendControlledEvent()">Push Data to Mautic</button>
+        <button onclick="triggerMauticSync()">Sync to Mautic Profile</button>
 
-        <div id="debug-log">System initialized...</div>
+        <div id="console-log">Ready to identify contact...</div>
     </div>
 </div>
 
 <script>
-    // --- Mautic Tracking Loader ---
+    // --- 1. Mautic Tracking Setup ---
     (function(w,d,t,u,n,a,m){
         w['MauticTrackingObject']=n;
         w[n]=w[n]||function(){(w[n].q=w[n].q||[]).push(arguments)},
@@ -76,50 +78,53 @@
         a.async=1; a.src=u; m.parentNode.insertBefore(a,m)
     })(window,document,'script','https://d2.restaurantassociation.com/mtc.js','mt');
 
-    function log(msg) {
-        const consoleBox = document.getElementById('debug-log');
-        consoleBox.innerHTML += `> ${new Date().toLocaleTimeString()}: ${msg}<br>`;
+    function writeLog(message) {
+        const consoleBox = document.getElementById('console-log');
+        consoleBox.innerHTML += `> ${new Date().toLocaleTimeString()}: ${message}<br>`;
         consoleBox.scrollTop = consoleBox.scrollHeight;
     }
 
-    function sendControlledEvent() {
-        const email = document.getElementById('userEmail').value;
-        const tags = document.getElementById('userTags').value;
+    // --- 2. The Identity Switching Logic ---
+    function triggerMauticSync() {
+        const email = document.getElementById('targetEmail').value;
+        const tags = document.getElementById('targetTags').value;
         const article = "Labor Cost Trends 2025";
 
         if (!email) {
-            alert("Email is required to identify the contact!");
+            alert("Please provide an email address.");
             return;
         }
 
-        log(`Sending Event for ${email}...`);
+        writeLog(`Switching context to: <strong>${email}</strong>`);
 
-        // A. Formal Event
+        // A. Formal Event (for internal reports)
         mt('send', 'event', {
             category: 'Content',
             action: 'Article Read',
-            name: article
+            name: article,
+            email: email // Identifying the contact here as well
         });
 
-        // B. Forced URL Parameters (for the Timeline rows)
-        const baseUrl = window.location.origin + window.location.pathname;
-        const trackingUrl = `${baseUrl}?article=${encodeURIComponent(article)}&category=Content&action=Article+Read&t=${Date.now()}`;
+        // B. Force Rows in Timeline (using the URL trick)
+        const currentPath = window.location.origin + window.location.pathname;
+        const trackingUrl = `${currentPath}?article=${encodeURIComponent(article)}&category=Content&action=Article+Read&t=${Date.now()}`;
 
-        // C. The Identity & Tag Hit
+        // C. The CRITICAL Identity Hit
+        // By sending 'email' here, Mautic matches the browser hit to the specific contact record.
         mt('send', 'pageview', {
             'mt_event': article,
             'page_title': article,
             'page_url': trackingUrl,
-            'email': email, // Updates/Finds the contact
-            'tags': tags    // Applies the tags you typed
+            'email': email, // Updates/Finds the specific contact
+            'tags': tags    // Syncs the tags
         });
 
-        log(`✅ Sent! Contact identified. Tags [${tags}] applied.`);
+        writeLog(`✅ Success! Data pushed to ${email}.`);
     }
 
-    // Server Confirmation
+    // Confirmation from Mautic Server
     document.addEventListener('mauticPageEventDelivered', function() {
-        log('Mautic Server: Sync Confirmed.');
+        writeLog('Mautic Server: Contact profile sync confirmed.');
     });
 </script>
 
