@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual CRM Control | Mautic Debugger</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
+        header { background: #004a7c; color: white; padding: 20px; text-align: center; border-bottom: 4px solid #007cba; }
+        .container { max-width: 600px; margin: 30px auto; padding: 20px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        .field-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
+        input { 
+            width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; 
+            box-sizing: border-box; font-size: 14px; 
+        }
+        input:focus { border-color: #007cba; outline: none; box-shadow: 0 0 5px rgba(0,124,186,0.2); }
+
+        .info-box { 
+            background: #e7f3ff; border: 1px solid #b2d7ff; padding: 15px; 
+            border-radius: 6px; margin: 20px 0; font-size: 14px;
+        }
+
+        button { 
+            background-color: #28a745; color: white; border: none; padding: 15px; 
+            font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #218838; }
+
+        #debug-log { 
+            margin-top: 20px; background: #1e1e1e; color: #32ff32; padding: 15px; 
+            border-radius: 6px; font-family: 'Consolas', monospace; font-size: 12px; 
+            height: 120px; overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Mautic Event & Identity Controller</h1>
+</header>
+
+<div class="container">
+    <div class="card">
+        <div class="field-group">
+            <label>Update Contact Email:</label>
+            <input type="email" id="userEmail" placeholder="Enter email (e.g. owner@restaurant.com)" value="testuser@example.com">
+        </div>
+
+        <div class="field-group">
+            <label>Update Tags (separate with commas):</label>
+            <input type="text" id="userTags" placeholder="e.g. hot_lead, article_read, v2_test" value="hot_lead, restaurant_pro">
+        </div>
+
+        <div class="info-box">
+            <strong>Action:</strong> Reading Article<br>
+            <strong>Title:</strong> Labor Cost Trends 2025
+        </div>
+        
+        <button onclick="sendControlledEvent()">Push Data to Mautic</button>
+
+        <div id="debug-log">System initialized...</div>
+    </div>
+</div>
+
+<script>
+    // --- Mautic Tracking Loader ---
+    (function(w,d,t,u,n,a,m){
+        w['MauticTrackingObject']=n;
+        w[n]=w[n]||function(){(w[n].q=w[n].q||[]).push(arguments)},
+        a=d.createElement(t),
+        m=d.getElementsByTagName(t)[0];
+        a.async=1; a.src=u; m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://d2.restaurantassociation.com/mtc.js','mt');
+
+    function log(msg) {
+        const consoleBox = document.getElementById('debug-log');
+        consoleBox.innerHTML += `> ${new Date().toLocaleTimeString()}: ${msg}<br>`;
+        consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    function sendControlledEvent() {
+        const email = document.getElementById('userEmail').value;
+        const tags = document.getElementById('userTags').value;
+        const article = "Labor Cost Trends 2025";
+
+        if (!email) {
+            alert("Email is required to identify the contact!");
+            return;
+        }
+
+        log(`Sending Event for ${email}...`);
+
+        // A. Formal Event
+        mt('send', 'event', {
+            category: 'Content',
+            action: 'Article Read',
+            name: article
+        });
+
+        // B. Forced URL Parameters (for the Timeline rows)
+        const baseUrl = window.location.origin + window.location.pathname;
+        const trackingUrl = `${baseUrl}?article=${encodeURIComponent(article)}&category=Content&action=Article+Read&t=${Date.now()}`;
+
+        // C. The Identity & Tag Hit
+        mt('send', 'pageview', {
+            'mt_event': article,
+            'page_title': article,
+            'page_url': trackingUrl,
+            'email': email, // Updates/Finds the contact
+            'tags': tags    // Applies the tags you typed
+        });
+
+        log(`✅ Sent! Contact identified. Tags [${tags}] applied.`);
+    }
+
+    // Server Confirmation
+    document.addEventListener('mauticPageEventDelivered', function() {
+        log('Mautic Server: Sync Confirmed.');
+    });
+</script>
+
+</body>
+</html>
