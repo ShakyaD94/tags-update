@@ -2,91 +2,103 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Manual CRM Sync | No Auto-Tracking</title>
+    <title>Mautic Manual Sync | Zero-Auto-Track</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f8f9fa; padding: 40px; display: flex; justify-content: center; }
-        .box { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
-        h2 { color: #004a7c; font-size: 20px; margin-top: 0; }
-        label { display: block; font-weight: 600; font-size: 13px; margin: 15px 0 5px; color: #555; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 40px; display: flex; justify-content: center; }
+        .box { background: white; padding: 35px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); width: 100%; max-width: 450px; border-top: 5px solid #d9534f; }
+        h2 { color: #333; font-size: 22px; margin-top: 0; }
+        p { font-size: 13px; color: #666; margin-bottom: 20px; }
+        label { display: block; font-weight: 600; font-size: 13px; margin: 15px 0 5px; color: #444; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 5px; }
+        input:focus { border-color: #007cba; outline: none; }
         button { 
-            width: 100%; padding: 15px; background: #28a745; color: white; border: none; 
+            width: 100%; padding: 16px; background: #d9534f; color: white; border: none; 
             border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 20px; font-size: 16px;
+            transition: background 0.3s;
         }
-        button:hover { background: #218838; }
-        #status-console { 
-            margin-top: 20px; background: #222; color: #00ff00; padding: 12px; 
-            border-radius: 6px; font-family: monospace; font-size: 12px; height: 80px; overflow-y: auto;
+        button:hover { background: #c9302c; }
+        #log { 
+            margin-top: 20px; background: #1a1a1a; color: #00ff00; padding: 12px; 
+            border-radius: 6px; font-family: 'Courier New', monospace; font-size: 11px; height: 100px; overflow-y: auto;
         }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Mautic Manual Sync</h2>
+    <h2>Manual CRM Injector</h2>
+    <p>No data is sent until you provide an email and click the button below.</p>
     
-    <label>Contact Email (Required):</label>
-    <input type="email" id="targetEmail" placeholder="Enter user@restaurant.com">
+    <label>Target Email ID:</label>
+    <input type="email" id="targetEmail" placeholder="Enter owner@restaurant.com">
     
-    <label>Tags to Apply:</label>
+    <label>Tags to Assign:</label>
     <input type="text" id="targetTags" placeholder="e.g. hot_lead, pos_demo">
     
-    <button onclick="manualSync()">Push Data to Mautic</button>
+    <button onclick="initializeAndSync()">Force Sync to Mautic</button>
     
-    <div id="status-console">Awaiting user action...</div>
+    <div id="log">Status: Idle (No tracking active)</div>
 </div>
 
 <script>
-    // --- 1. SILENT INITIALIZATION ---
-    // The library loads, but notice there is NO mt('send', 'pageview') here.
-    (function(w,d,t,u,n,a,m){
-        w['MauticTrackingObject']=n;
-        w[n]=w[n]||function(){(w[n].q=w[n].q||[]).push(arguments)},
-        a=d.createElement(t),
-        m=d.getElementsByTagName(t)[0];
-        a.async=1; a.src=u; m.parentNode.insertBefore(a,m)
-    })(window,document,'script','https://d2.restaurantassociation.com/mtc.js','mt');
-
-    function log(msg) {
-        const console = document.getElementById('status-console');
-        console.innerHTML += `> ${msg}<br>`;
-        console.scrollTop = console.scrollHeight;
+    function writeLog(msg) {
+        const consoleObj = document.getElementById('log');
+        consoleObj.innerHTML += `> ${new Date().toLocaleTimeString()}: ${msg}<br>`;
+        consoleObj.scrollTop = consoleObj.scrollHeight;
     }
 
-    // --- 2. CONTROLLED EXECUTION ---
-    function manualSync() {
+    /**
+     * This function handles everything ONLY on click.
+     */
+    function initializeAndSync() {
         const email = document.getElementById('targetEmail').value;
         const tags = document.getElementById('targetTags').value;
 
         if (!email) {
-            alert("Email is required before sending data.");
+            alert("Please enter an Email ID first.");
             return;
         }
 
-        log(`Initiating sync for ${email}...`);
+        writeLog("Initializing Mautic Library...");
 
-        // Force reset the ID so it doesn't merge with previous browser sessions
-        mt('set', 'id', null);
+        // 1. Manually Load the Mautic Script ONLY NOW
+        (function(w,d,t,u,n,a,m){
+            w['MauticTrackingObject']=n;
+            w[n]=w[n]||function(){(w[n].q=w[n].q||[]).push(arguments)},
+            a=d.createElement(t),
+            m=d.getElementsByTagName(t)[0];
+            a.async=1; a.src=u; 
+            
+            // On script load, trigger the specific sync
+            a.onload = function() {
+                writeLog("Library Loaded. Sending Identity...");
+                
+                // A. Clear any old cookies
+                mt('set', 'id', null);
 
-        // Define the specific event data
-        const articleTitle = "Labor Cost Trends 2025";
-        const forcedUrl = `${window.location.origin}${window.location.pathname}?article=${encodeURIComponent(articleTitle)}&category=Content&action=Read&t=${Date.now()}`;
+                // B. Prepare dynamic URL
+                const article = "Labor Cost Trends 2025";
+                const forcedUrl = `${window.location.origin}${window.location.pathname}?article=${encodeURIComponent(article)}&category=Content&action=Read&t=${Date.now()}`;
 
-        // NOW we send the data
-        mt('send', 'pageview', {
-            'mt_event': articleTitle,
-            'page_title': articleTitle,
-            'page_url': forcedUrl,
-            'email': email,
-            'tags': tags
-        });
-
-        log(`✅ Success: Event pushed.`);
+                // C. Send the actual hit
+                mt('send', 'pageview', {
+                    'mt_event': article,
+                    'page_title': article,
+                    'page_url': forcedUrl,
+                    'email': email,
+                    'tags': tags
+                });
+                
+                writeLog(`✅ Success: Pushed to ${email}`);
+            };
+            
+            m.parentNode.insertBefore(a,m);
+        })(window,document,'script','https://d2.restaurantassociation.com/mtc.js','mt');
     }
 
-    // Confirmation from server
+    // Server-side confirmation
     document.addEventListener('mauticPageEventDelivered', function() {
-        log('Mautic: Data received.');
+        writeLog('Mautic Server: Record Updated.');
     });
 </script>
 
